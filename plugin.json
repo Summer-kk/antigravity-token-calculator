@@ -1,0 +1,15 @@
+{
+  "name": "token-calculator",
+  "displayName": "Token 消耗统计",
+  "version": "1.0.0",
+  "description": "本地 Token 消耗与各项目用量可视化分析侧边栏面板",
+  "author": {
+    "name": "Summer-kk"
+  },
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "打开 Token 统计侧边栏仪表盘",
+    "更新本地各项目 Token 消耗数据",
+    "导出全量 Token 消耗明细为 CSV"
+  ]
+}

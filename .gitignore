@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Local generated snapshot with personal chat data
+token_dashboard.html
+
+# Local caches
+*.cache
+token_tracker_cache.json
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

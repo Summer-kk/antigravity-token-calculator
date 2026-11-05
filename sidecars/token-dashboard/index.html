@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能体 Token 统计大盘 (Antigravity + Codex)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-main: var(--background, #0b1120);
+      --bg-card: var(--card, #131d31);
+      --bg-card-hover: #1e293b;
+      --border-color: var(--border, #243247);
+      --text-main: var(--foreground, #f8fafc);
+      --text-muted: var(--muted-foreground, #94a3b8);
+      --primary-color: var(--primary, #38bdf8);
+      --accent-color: var(--accent, #a855f7);
+    }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: var(--border-color);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background-color: #475569;
+    }
+    .data-bar-bg {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      pointer-events: none;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+  </style>
+  <script>
+    // 预注入的双端离线全量数据 (由脚本自动注入)
+    window.INITIAL_TOKEN_DATA = /* DATA_PLACEHOLDER */ null;
+  </script>
+</head>
+
+<body class="h-screen max-h-screen overflow-hidden flex flex-col p-2 bg-[var(--bg-main)] text-[var(--text-main)] text-xs select-none min-w-[500px]">
+
+  <!-- 1. 顶部主标题、筛选胶囊与操作栏 (紧凑高集成) -->
+  <header class="flex flex-col gap-1.5 pb-1.5 mb-1.5 border-b border-[var(--border-color)] shrink-0">
+    <!-- 第一排：主标题 + 平台选择(全部汇总/Antigravity/Codex) + 刷新 + 重启 + 导出 (去掉简写) -->
+    <div class="flex items-center justify-between gap-2 shrink-0">
+      <!-- 左侧：标题与状态 -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-base leading-none">⚡</span>
+        <h1 class="text-xs sm:text-sm font-bold text-[var(--text-main)] tracking-tight whitespace-nowrap">智能体 Token 统计大盘</h1>
+        <span class="px-1.5 py-0.2 text-[9px] rounded-full bg-slate-800 text-sky-400 border border-slate-700 font-mono hidden sm:inline">双端统一</span>
+        <span id="update-time" class="text-[10px] text-[var(--text-muted)] font-mono ml-1 hidden md:inline">正在连接...</span>
+      </div>
+
+      <!-- 右侧：平台切换药丸 + 操作按钮组 (全部汇总/刷新/重启/导出) -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- 平台切换药丸 (全部汇总 / Antigravity / Codex) -->
+        <div class="flex bg-slate-900/90 p-0.5 rounded-lg border border-[var(--border-color)] text-[11px] shrink-0">
+          <button id="tab-all" onclick="setPlatform('ALL')" class="px-2 py-0.5 rounded transition-all bg-sky-600 text-white font-medium">全部汇总</button>
+          <button id="tab-agy" onclick="setPlatform('Antigravity')" class="px-2 py-0.5 rounded text-[var(--text-muted)] hover:text-white transition-all font-medium">Antigravity</button>
+          <button id="tab-codex" onclick="setPlatform('Codex')" class="px-2 py-0.5 rounded text-[var(--text-muted)] hover:text-white transition-all font-medium">Codex</button>
+        </div>
+
+        <!-- 刷新按钮 -->
+        <button onclick="fetchData(true)" class="p-1 rounded bg-slate-900/80 border border-[var(--border-color)] hover:border-sky-500/50 text-[var(--text-muted)] hover:text-sky-400 transition" title="立即拉取最新数据">
+          <svg id="icon-refresh" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+
+        <!-- 重启按钮 -->
+        <button id="btn-restart" onclick="openRestartModal()" class="px-2 py-0.5 rounded bg-slate-900/80 border border-[var(--border-color)] hover:border-amber-500/50 text-[var(--text-muted)] hover:text-amber-400 transition flex items-center gap-1 text-[11px]" title="重启并重新扫描双端数据">
+          <svg id="icon-restart" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="font-medium">重启</span>
+        </button>
+
+        <!-- 导出 CSV 按钮 -->
+        <button onclick="exportCSV()" class="p-1 rounded bg-slate-900/80 border border-[var(--border-color)] hover:border-emerald-500/50 text-[var(--text-muted)] hover:text-emerald-400 transition" title="导出全量明细 CSV">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 第二排：时间筛选 (全部/今天/7天/14天/30天) + 项目/日期联动下钻标签 (整排铺开，彻底杜绝压缩) -->
+    <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5 text-xs">
+      <!-- 时间筛选胶囊 -->
+      <div class="flex items-center gap-1 shrink-0 text-[11px]">
+        <button id="time-all" onclick="setTimeRange('ALL')" class="time-pill px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/40 font-medium shrink-0">全部</button>
+        <button id="time-today" onclick="setTimeRange('today')" class="time-pill px-2 py-0.5 rounded-full bg-slate-900/60 text-slate-400 border border-[var(--border-color)] hover:text-white shrink-0">今天</button>
+        <button id="time-7d" onclick="setTimeRange('7d')" class="time-pill px-2 py-0.5 rounded-full bg-slate-900/60 text-slate-400 border border-[var(--border-color)] hover:text-white shrink-0">7天</button>
+        <button id="time-14d" onclick="setTimeRange('14d')" class="time-pill px-2 py-0.5 rounded-full bg-slate-900/60 text-slate-400 border border-[var(--border-color)] hover:text-white shrink-0">14天</button>
+        <button id="time-30d" onclick="setTimeRange('30d')" class="time-pill px-2 py-0.5 rounded-full bg-slate-900/60 text-slate-400 border border-[var(--border-color)] hover:text-white shrink-0">30天</button>
+      </div>
+
+      <!-- 分隔细线 (仅在有激活筛选时显示) -->
+      <div id="drilldown-divider" class="hidden h-3.5 w-px bg-slate-700/60 mx-1 shrink-0"></div>
+
+      <!-- 激活的双向联动下钻 Chips 容器 (项目 + 日期，整排充足空间绝不换行压缩) -->
+      <div id="active-drilldown-container" class="hidden flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+        <!-- 动态注入项目与日期过滤标签 -->
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. 四大核心指标卡片 (左侧标签 + 右侧大数字，极简紧凑) -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 mb-1.5 shrink-0">
+    <!-- 1. 全平台总消耗 -->
+    <div class="p-1.5 px-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex items-center justify-between">
+      <div class="min-w-0 pr-2">
+        <div class="flex items-center gap-1.5">
+          <span id="label-stat-total" class="font-medium text-slate-200 text-xs truncate">全平台总消耗</span>
+          <span class="text-sky-400 font-mono text-[9px] bg-sky-950/70 px-1 py-0.2 rounded border border-sky-800/60 shrink-0">TOTAL</span>
+        </div>
+        <div id="stat-platform-ratio" class="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)] font-mono mt-0.5 truncate">
+          <span class="text-sky-400">AGY: <strong id="sub-agy-val">0</strong></span>
+          <span class="text-purple-400">Codex: <strong id="sub-codex-val">0</strong></span>
+        </div>
+      </div>
+      <div class="text-right shrink-0">
+        <div id="stat-total" class="text-base sm:text-lg font-bold font-mono text-[var(--text-main)]" title="计算中...">0</div>
+      </div>
+    </div>
+
+    <!-- 2. Prompt Cache 缓存 -->
+    <div class="p-1.5 px-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex items-center justify-between">
+      <div class="min-w-0 pr-2">
+        <div class="flex items-center gap-1.5">
+          <span class="font-medium text-slate-200 text-xs truncate">Prompt Cache 缓存</span>
+          <span id="stat-cache-ratio" class="text-emerald-400 font-mono font-bold text-[9px] bg-emerald-950/70 px-1 py-0.2 rounded border border-emerald-800/60 shrink-0">0%</span>
+        </div>
+        <div class="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">
+          已自动节省约 <span id="stat-cache-saved" class="text-emerald-300 font-mono font-semibold">0%</span>
+        </div>
+      </div>
+      <div class="text-right shrink-0">
+        <div id="stat-cache" class="text-base sm:text-lg font-bold font-mono text-emerald-400" title="计算中...">0</div>
+      </div>
+    </div>
+
+    <!-- 3. 输入 / 输出 -->
+    <div class="p-1.5 px-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex items-center justify-between">
+      <div class="min-w-0 pr-2">
+        <div class="flex items-center gap-1.5">
+          <span class="font-medium text-slate-200 text-xs truncate">输入 / 输出 Tokens</span>
+          <span class="text-amber-400 font-mono text-[9px] bg-amber-950/70 px-1 py-0.2 rounded border border-amber-800/60 shrink-0">I / O</span>
+        </div>
+        <div class="text-[10px] text-[var(--text-muted)] mt-0.5 truncate flex items-center gap-2">
+          <span class="text-purple-300">紫: 输入</span>
+          <span class="text-amber-300">黄: 输出</span>
+        </div>
+      </div>
+      <div class="text-right shrink-0 font-mono font-bold leading-tight">
+        <div class="text-xs text-purple-400" id="stat-input" title="输入">0</div>
+        <div class="text-xs text-amber-400" id="stat-output" title="输出">0</div>
+      </div>
+    </div>
+
+    <!-- 4. 活跃统计 -->
+    <div class="p-1.5 px-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex items-center justify-between">
+      <div class="min-w-0 pr-2">
+        <div class="flex items-center gap-1.5">
+          <span class="font-medium text-slate-200 text-xs truncate">活跃会话 / 交互</span>
+          <span class="text-pink-400 font-mono text-[9px] bg-pink-950/70 px-1 py-0.2 rounded border border-pink-800/60 shrink-0">ACT</span>
+        </div>
+        <div id="stat-requests" class="text-[10px] text-[var(--text-muted)] truncate font-mono mt-0.5">
+          累计 0 次交互
+        </div>
+      </div>
+      <div class="text-right shrink-0">
+        <div class="text-base sm:text-lg font-bold font-mono text-[var(--text-main)]">
+          <span id="stat-convs">0</span><span class="text-xs font-normal text-[var(--text-muted)] ml-0.5">个</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 双端比例 (按用户要求：上下排列，全宽横条，高度仅 ~32px) -->
+  <div id="global-ratio-container" class="mb-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex items-center justify-between gap-3 text-xs shrink-0">
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="font-semibold text-white flex items-center gap-1">
+        <span>⚖️ 双端比例</span>
+      </span>
+      <span id="ratio-desc" class="text-[10px] text-[var(--text-muted)] font-mono hidden sm:inline"></span>
+    </div>
+
+    <!-- 中部：双色比例进度条与内嵌百分比 -->
+    <div class="flex-1 flex items-center gap-2 max-w-2xl mx-1 font-mono text-[11px]">
+      <span class="text-sky-400 whitespace-nowrap flex items-center gap-1 font-bold">
+        <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>AGY: <span id="ratio-agy-pct">0%</span>
+        <span id="ratio-agy-tokens" class="text-[10px] text-slate-400 font-normal hidden md:inline"></span>
+      </span>
+      
+      <div class="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden flex shadow-inner">
+        <div id="bar-ratio-agy" class="bg-gradient-to-r from-sky-600 to-sky-400 h-2 transition-all duration-500" style="width: 50%"></div>
+        <div id="bar-ratio-codex" class="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 transition-all duration-500" style="width: 50%"></div>
+      </div>
+
+      <span class="text-purple-400 whitespace-nowrap flex items-center gap-1 font-bold">
+        Codex: <span id="ratio-codex-pct">0%</span><span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+        <span id="ratio-codex-tokens" class="text-[10px] text-slate-400 font-normal hidden md:inline"></span>
+      </span>
+    </div>
+
+    <!-- 右侧会话数简报 -->
+    <div class="text-[10px] text-slate-400 font-mono shrink-0 hidden lg:flex items-center gap-2">
+      <span id="ratio-agy-sub">0 会话</span>
+      <span class="text-slate-600">|</span>
+      <span id="ratio-codex-sub">0 会话</span>
+    </div>
+  </div>
+
+  <!-- 4. Token 活动每日消耗 (严格从1月排布至11月，月份刻度精准锚定各周，高度充足绝不遮挡字体) -->
+  <div id="heatmap-container" class="mb-1.5 p-2 sm:p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col shrink-0 h-[160px] overflow-hidden" style="overflow: hidden !important;">
+    <div class="flex justify-between items-center mb-1 shrink-0 whitespace-nowrap">
+      <div class="flex items-center gap-1.5 truncate">
+        <h2 id="daily-header" class="text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 truncate whitespace-nowrap">
+          <span>📅 Token 活动 (每日消耗热力图)</span>
+        </h2>
+        <span id="heatmap-drilldown-badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono whitespace-nowrap"></span>
+      </div>
+
+      <!-- 右上角指标与图例 -->
+      <div class="flex items-center gap-2.5 text-[10px] font-mono text-[var(--text-muted)] shrink-0 whitespace-nowrap">
+        <span class="text-sky-400 font-medium">每天</span>
+        <span class="hidden sm:inline">峰值: <strong id="heatmap-peak" class="text-slate-200 font-semibold">0</strong></span>
+        <span>活跃天数: <strong id="heatmap-active-days" class="text-slate-200 font-semibold">0天</strong></span>
+        <!-- 渐变图例 -->
+        <div class="flex items-center gap-1 pl-1.5 border-l border-slate-700/60 hidden sm:flex">
+          <span class="text-[9px] text-slate-500">少</span>
+          <span class="w-2.5 h-2.5 rounded-[2px] bg-slate-800/80 border border-slate-700/40"></span>
+          <span class="w-2.5 h-2.5 rounded-[2px] bg-blue-900"></span>
+          <span class="w-2.5 h-2.5 rounded-[2px] bg-blue-600"></span>
+          <span class="w-2.5 h-2.5 rounded-[2px] bg-sky-500"></span>
+          <span class="w-2.5 h-2.5 rounded-[2px] bg-sky-300"></span>
+          <span class="text-[9px] text-slate-500">多</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 热力图核心展示区：100% 自适应居中，无任何左右或上下滑动条 -->
+    <div class="flex-1 min-h-0 flex flex-col justify-center items-center overflow-hidden w-full select-none py-0.5">
+      <div class="w-full max-w-[740px] flex items-stretch justify-center gap-1.5 select-none relative pb-4">
+        <!-- 纵坐标：星期指示标签 (周一/周三/周五/周日)，采用 7 行等分网格，与格子矩阵完美垂直对齐 -->
+        <div id="heatmap-weekdays" class="grid text-[8px] font-mono text-slate-500 pr-0.5 select-none leading-none shrink-0" style="grid-template-rows: repeat(7, minmax(0, 1fr)); gap: 2px;">
+          <span class="flex items-center justify-end">一</span>
+          <span class="flex items-center justify-end"></span>
+          <span class="flex items-center justify-end">三</span>
+          <span class="flex items-center justify-end"></span>
+          <span class="flex items-center justify-end">五</span>
+          <span class="flex items-center justify-end"></span>
+          <span class="flex items-center justify-end">日</span>
+        </div>
+        <!-- 核心格子矩阵：53 列自适应 CSS Grid，整框无滑动条自动居中贴合 -->
+        <div id="heatmap-grid" class="flex-1 grid select-none relative" style="grid-template-columns: repeat(53, minmax(0, 1fr)); gap: 2px;">
+          <!-- 动态注入 53 列与方块，月份标签作为各月起始列的底部锚定子元素 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 项目消耗排行 (往下充分延伸，展示更多排项目卡片) -->
+  <div class="mb-1.5 p-2 sm:p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm shrink-0 h-[195px] sm:h-[210px] flex flex-col overflow-hidden">
+    <div class="flex justify-between items-center mb-1 shrink-0">
+      <h2 id="projects-header" class="text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 truncate">
+        <span>📁 项目消耗排行</span>
+        <span class="text-[10px] text-[var(--text-muted)] font-normal">(点击联动走势与明细)</span>
+      </h2>
+      <div class="flex items-center gap-2 text-[10px] shrink-0">
+        <span class="flex items-center gap-1 text-sky-400"><span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>AGY</span>
+        <span class="flex items-center gap-1 text-purple-400"><span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>Codex</span>
+        <span id="projects-total-count" class="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">0个项目</span>
+      </div>
+    </div>
+
+    <!-- 紧凑多列网格卡片：强制每行固定 40px 并靠顶对齐，坚决杜绝卡片被压成薄片，超出顺畅滚动 -->
+    <div id="projects-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1" style="grid-auto-rows: 40px; align-content: start;">
+      <!-- 动态注入项目卡片 -->
+    </div>
+  </div>
+
+  <!-- 6. 对话明细清单 (核心自适应区：使用 flex-1 min-h-0 充满下方全部空间，绝不留黑底，锁屏零外滚) -->
+  <div class="flex-1 min-h-[140px] p-2 sm:p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col overflow-hidden">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 mb-1 shrink-0 whitespace-nowrap">
+      <div class="flex items-center gap-2 whitespace-nowrap">
+        <h2 class="text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
+          <span>💬 对话明细清单</span>
+        </h2>
+        <span id="filtered-count" class="text-[10px] px-2 py-0.2 rounded-full bg-slate-800 text-[var(--text-muted)] font-mono whitespace-nowrap">0 个对话</span>
+      </div>
+      
+      <!-- 过滤器与排版切换 -->
+      <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto whitespace-nowrap">
+        <div class="flex bg-slate-900/90 p-0.5 rounded border border-[var(--border-color)] text-[10px]">
+          <button id="view-auto" onclick="setViewMode('auto')" class="px-1.5 py-0.5 rounded text-sky-400 bg-sky-950/60 font-medium">自动</button>
+          <button id="view-card" onclick="setViewMode('cards')" class="px-1.5 py-0.5 rounded text-slate-400 hover:text-white">卡片</button>
+          <button id="view-table" onclick="setViewMode('table')" class="px-1.5 py-0.5 rounded text-slate-400 hover:text-white">表格</button>
+        </div>
+
+        <select id="filter-project" onchange="onProjectSelectChange()" class="px-1.5 py-0.5 text-xs rounded bg-slate-900 border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-sky-500 max-w-[130px]">
+          <option value="ALL">全部项目</option>
+        </select>
+
+        <div class="relative flex-1 sm:w-40">
+          <input id="filter-search" oninput="renderTable()" type="text" placeholder="搜索会话..." class="w-full pl-5 pr-2 py-0.5 text-xs rounded bg-slate-900 border border-[var(--border-color)] text-[var(--text-main)] placeholder-slate-500 focus:outline-none focus:border-sky-500">
+          <svg class="w-2.5 h-2.5 text-slate-500 absolute left-1.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 容器：吸顶表头 + 充满底部全部高度 + 内部顺畅滚动 -->
+    <div id="details-container" class="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <!-- 动态注入 -->
+    </div>
+  </div>
+
+  <script>
+
+    let rawData = null;
+    let currentPlatform = "ALL"; // 'ALL', 'Antigravity', 'Codex'
+    let currentTimeRange = "ALL"; // 'ALL', 'today', '7d', '14d', '30d'
+    let drilldownProject = null; // 点击项目下钻
+    let drilldownDate = null;    // 点击日期下钻
+    let numberMode = "compact";  // 'compact' (1.98B) or 'exact' (1,982,554,613)
+    let viewMode = "auto";       // 'auto', 'cards', 'table'
+    let sortDesc = true;
+
+    function formatExact(num) {
+      if (!num && num !== 0) return "0";
+      return Number(num).toLocaleString();
+    }
+
+    function formatCompact(num) {
+      if (!num && num !== 0) return "0";
+      num = Number(num);
+      if (num >= 1000000000) return (num / 1000000000).toFixed(2) + " B";
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + " M";
+      if (num >= 1000) return (num / 1000).toFixed(1) + " K";
+      return num.toLocaleString();
+    }
+
+    function displayVal(num) {
+      return numberMode === "compact" ? formatCompact(num) : formatExact(num);
+    }
+
+    function toggleNumberMode() {
+      numberMode = (numberMode === "compact") ? "exact" : "compact";
+      const elem = document.getElementById("num-mode-text");
+      if (elem) elem.textContent = (numberMode === "compact") ? "B/M 简写" : "精确数字";
+      renderDashboard();
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      ["auto", "card", "table"].forEach(m => {
+        const btn = document.getElementById("view-" + m);
+        if (btn) {
+          if (m === mode || (mode === "cards" && m === "card")) {
+            btn.className = "px-1.5 py-0.5 rounded text-sky-400 bg-sky-950/60 font-medium";
+          } else {
+            btn.className = "px-1.5 py-0.5 rounded text-slate-400 hover:text-white";
+          }
+        }
+      });
+      renderTable();
+    }
+
+    function setPlatform(platform) {
+      currentPlatform = platform;
+      const tabAll = document.getElementById("tab-all");
+      const tabAgy = document.getElementById("tab-agy");
+      const tabCodex = document.getElementById("tab-codex");
+      
+      const activeClass = "px-2 py-0.5 rounded transition-all bg-sky-600 text-white font-medium";
+      const inactiveClass = "px-2 py-0.5 rounded text-[var(--text-muted)] hover:text-white transition-all font-medium";
+
+      tabAll.className = (platform === "ALL") ? activeClass : inactiveClass;
+      tabAgy.className = (platform === "Antigravity") ? "px-2 py-0.5 rounded transition-all bg-sky-500 text-white font-medium" : inactiveClass;
+      tabCodex.className = (platform === "Codex") ? "px-2 py-0.5 rounded transition-all bg-purple-600 text-white font-medium" : inactiveClass;
+
+      renderDashboard();
+    }
+
+    function setTimeRange(range) {
+      currentTimeRange = range;
+      document.querySelectorAll(".time-pill").forEach(el => {
+        el.className = "time-pill px-2 py-0.5 rounded-full bg-slate-900/60 text-slate-400 border border-[var(--border-color)] hover:text-white shrink-0";
+      });
+      const activeBtn = document.getElementById("time-" + range);
+      if (activeBtn) {
+        activeBtn.className = "time-pill px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/40 font-medium shrink-0";
+      }
+      renderDashboard();
+    }
+
+    function setDrilldownProject(projectName) {
+      if (drilldownProject === projectName || projectName === null) {
+        drilldownProject = null;
+        document.getElementById("filter-project").value = "ALL";
+      } else {
+        drilldownProject = projectName;
+        document.getElementById("filter-project").value = projectName;
+      }
+      renderDashboard();
+    }
+
+    function setDrilldownDate(dateStr) {
+      if (drilldownDate === dateStr || dateStr === null) {
+        drilldownDate = null;
+      } else {
+        drilldownDate = dateStr;
+      }
+      renderDashboard();
+    }
+
+    function clearAllDrilldown() {
+      drilldownProject = null;
+      drilldownDate = null;
+      document.getElementById("filter-project").value = "ALL";
+      renderDashboard();
+    }
+
+    function onProjectSelectChange() {
+      const val = document.getElementById("filter-project").value;
+      drilldownProject = (val === "ALL") ? null : val;
+      renderDashboard();
+    }
+
+    function getValidDates() {
+      if (!rawData || !rawData.daily) return null;
+      if (currentTimeRange === "ALL") return null;
+
+      const daily = rawData.daily.map(d => d.date).sort();
+      if (daily.length === 0) return null;
+
+      const latestDateStr = daily[daily.length - 1];
+      const latestDate = new Date(latestDateStr);
+
+      if (currentTimeRange === "today") {
+        return new Set([latestDateStr]);
+      }
+
+      let days = 7;
+      if (currentTimeRange === "14d") days = 14;
+      if (currentTimeRange === "30d") days = 30;
+
+      const cutoff = new Date(latestDate);
+      cutoff.setDate(cutoff.getDate() - (days - 1));
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+      const validSet = new Set();
+      daily.forEach(d => {
+        if (d >= cutoffStr) validSet.add(d);
+      });
+      return validSet;
+    }
+
+    async function fetchData(isUserManualClick = false) {
+      const icon = document.getElementById("icon-refresh");
+      if (icon) icon.classList.add("animate-spin");
+
+      let fetched = false;
+      const endpoints = ["/api/tokens"];
+
+      for (const url of endpoints) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            rawData = await res.json();
+            renderDashboard();
+            fetched = true;
+            break;
+          }
+        } catch (e) {
+          // 降级
+        }
+      }
+
+      if (!fetched && !rawData && window.INITIAL_TOKEN_DATA) {
+        rawData = window.INITIAL_TOKEN_DATA;
+        renderDashboard();
+      }
+
+      if (icon) icon.classList.remove("animate-spin");
+    }
+
+    function renderDashboard() {
+      if (!rawData) return;
+
+      const validDates = getValidDates();
+
+      // 更新顶部双向下钻状态 Chips
+      const chipContainer = document.getElementById("active-drilldown-container");
+      let chipsHtml = "";
+      if (drilldownProject) {
+        chipsHtml += `<span class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[11px] flex items-center gap-1 font-medium">📁 项目: ${drilldownProject} <button onclick="setDrilldownProject(null)" class="hover:text-white font-bold ml-0.5">✕</button></span>`;
+      }
+      if (drilldownDate) {
+        chipsHtml += `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] flex items-center gap-1 font-mono font-medium">📅 日期: ${drilldownDate} <button onclick="setDrilldownDate(null)" class="hover:text-white font-bold ml-0.5">✕</button></span>`;
+      }
+      if (drilldownProject && drilldownDate) {
+        chipsHtml += `<button onclick="clearAllDrilldown()" class="text-[10px] text-slate-400 hover:text-white underline ml-1">全部重置</button>`;
+      }
+      const chipDivider = document.getElementById("drilldown-divider");
+      if (chipsHtml) {
+        chipContainer.innerHTML = chipsHtml;
+        chipContainer.classList.remove("hidden");
+        if (chipDivider) chipDivider.classList.remove("hidden");
+      } else {
+        chipContainer.classList.add("hidden");
+        if (chipDivider) chipDivider.classList.add("hidden");
+      }
+
+      // 1. 根据当前筛选过滤会话
+      let filteredConvs = (rawData.conversations || []).map(c => {
+        if (drilldownDate) {
+          if (!c.daily || !c.daily[drilldownDate]) return null;
+          const du = c.daily[drilldownDate];
+          return {
+            ...c,
+            input: du.input || 0,
+            output: du.output || 0,
+            cache: du.cache || 0,
+            total: du.total || 0,
+            requests: du.requests || 0
+          };
+        }
+        if (validDates && c.daily) {
+          let subInput = 0, subOutput = 0, subCache = 0, subTotal = 0, subReq = 0;
+          let hasActivity = false;
+          for (const [date, du] of Object.entries(c.daily)) {
+            if (validDates.has(date)) {
+              hasActivity = true;
+              subInput += du.input || 0;
+              subOutput += du.output || 0;
+              subCache += du.cache || 0;
+              subTotal += du.total || 0;
+              subReq += du.requests || 0;
+            }
+          }
+          if (!hasActivity) return null;
+          return {
+            ...c,
+            input: subInput,
+            output: subOutput,
+            cache: subCache,
+            total: subTotal,
+            requests: subReq
+          };
+        }
+        return c;
+      }).filter(Boolean);
+
+      if (currentPlatform !== "ALL") {
+        filteredConvs = filteredConvs.filter(c => c.platform === currentPlatform);
+      }
+
+      let statsConvs = filteredConvs;
+      if (drilldownProject) {
+        statsConvs = filteredConvs.filter(c => c.project_name === drilldownProject);
+      }
+
+      let totalTokens = 0, totalInput = 0, totalOutput = 0, totalCache = 0, totalRequests = 0;
+      let agyTokens = 0, codexTokens = 0;
+      let agyConvs = 0, codexConvs = 0;
+
+      statsConvs.forEach(c => {
+        totalTokens += c.total;
+        totalInput += c.input;
+        totalOutput += c.output;
+        totalCache += c.cache;
+        totalRequests += c.requests;
+        if (c.platform === "Antigravity") {
+          agyTokens += c.total;
+          agyConvs++;
+        } else {
+          codexTokens += c.total;
+          codexConvs++;
+        }
+      });
+
+      const grandTotal = totalTokens || 1;
+      const cacheRatio = ((totalCache / grandTotal) * 100).toFixed(1);
+
+      // 更新顶部四大指标卡片
+      document.getElementById("update-time").textContent = "数据时间: " + rawData.summary.updated_at;
+      document.getElementById("stat-total").textContent = displayVal(totalTokens);
+      document.getElementById("stat-total").title = formatExact(totalTokens) + " Tokens";
+      
+      document.getElementById("stat-cache").textContent = displayVal(totalCache);
+      document.getElementById("stat-cache").title = formatExact(totalCache) + " Tokens";
+      document.getElementById("stat-cache-ratio").textContent = cacheRatio + "%";
+      document.getElementById("stat-cache-saved").textContent = cacheRatio + "%";
+
+      document.getElementById("stat-input").textContent = displayVal(totalInput);
+      document.getElementById("stat-input").title = "输入: " + formatExact(totalInput);
+      document.getElementById("stat-output").textContent = displayVal(totalOutput);
+      document.getElementById("stat-output").title = "输出: " + formatExact(totalOutput);
+
+      document.getElementById("stat-convs").textContent = statsConvs.length;
+      document.getElementById("stat-requests").textContent = `累计 ${formatExact(totalRequests)} 次交互`;
+
+      const agyPct = ((agyTokens / grandTotal) * 100).toFixed(1);
+      const codexPct = ((codexTokens / grandTotal) * 100).toFixed(1);
+
+      let scopeLabel = "总消耗";
+      if (drilldownProject && drilldownDate) scopeLabel = `${drilldownProject} (${drilldownDate.slice(5)})`;
+      else if (drilldownProject) scopeLabel = `${drilldownProject}`;
+      else if (drilldownDate) scopeLabel = `${drilldownDate.slice(5)} 当日`;
+
+      if (currentPlatform === "ALL") {
+        document.getElementById("label-stat-total").textContent = drilldownProject || drilldownDate ? scopeLabel : "全平台总消耗";
+        document.getElementById("stat-platform-ratio").style.display = "flex";
+        document.getElementById("sub-agy-val").textContent = displayVal(agyTokens);
+        document.getElementById("sub-codex-val").textContent = displayVal(codexTokens);
+      } else {
+        document.getElementById("label-stat-total").textContent = `${currentPlatform} ${scopeLabel}`;
+        document.getElementById("stat-platform-ratio").style.display = "none";
+      }
+
+      // 更新第 3 行【双端比例】条
+      const ratioAgyPctElem = document.getElementById("ratio-agy-pct");
+      const ratioCodexPctElem = document.getElementById("ratio-codex-pct");
+      const barRatioAgy = document.getElementById("bar-ratio-agy");
+      const barRatioCodex = document.getElementById("bar-ratio-codex");
+      const ratioAgyTokens = document.getElementById("ratio-agy-tokens");
+      const ratioCodexTokens = document.getElementById("ratio-codex-tokens");
+      const ratioAgySub = document.getElementById("ratio-agy-sub");
+      const ratioCodexSub = document.getElementById("ratio-codex-sub");
+      const ratioDesc = document.getElementById("ratio-desc");
+
+      if (ratioAgyPctElem) ratioAgyPctElem.textContent = agyPct + "%";
+      if (ratioCodexPctElem) ratioCodexPctElem.textContent = codexPct + "%";
+      if (barRatioAgy) barRatioAgy.style.width = agyPct + "%";
+      if (barRatioCodex) barRatioCodex.style.width = codexPct + "%";
+
+      if (ratioAgyTokens) ratioAgyTokens.textContent = `(${displayVal(agyTokens)})`;
+      if (ratioCodexTokens) ratioCodexTokens.textContent = `(${displayVal(codexTokens)})`;
+      if (ratioAgySub) ratioAgySub.textContent = `AGY: ${agyConvs} 个会话`;
+      if (ratioCodexSub) ratioCodexSub.textContent = `Codex: ${codexConvs} 个会话`;
+      if (ratioDesc) ratioDesc.textContent = `(${displayVal(agyTokens)} vs ${displayVal(codexTokens)})`;
+
+      // 4. 渲染第 4 行【Token 活动每日消耗热力图】(全宽自适应，解决缩放与月份文字截断)
+      renderHeatmap(validDates);
+
+      // 5. 渲染第 5 行【项目消耗排行】
+      renderProjectList(filteredConvs);
+
+      // 6. 渲染第 6 行【对话明细清单】(弹性充满底部，表头吸顶)
+      renderTable(filteredConvs);
+    }
+
+    // 渲染 Token 活动热力图：全宽多周自适应，消除任何文字截断
+    function renderHeatmap(validDates) {
+      const gridContainer = document.getElementById("heatmap-grid");
+      const peakElem = document.getElementById("heatmap-peak");
+      const activeDaysElem = document.getElementById("heatmap-active-days");
+      const drilldownBadge = document.getElementById("heatmap-drilldown-badge");
+      
+      if (!gridContainer) return;
+      gridContainer.innerHTML = "";
+
+      const dateMap = {};
+      let maxDayToken = 0;
+      let activeDaysCount = 0;
+
+      if (drilldownProject) {
+        let convs = (rawData.conversations || []).filter(c => c.project_name === drilldownProject);
+        if (currentPlatform !== "ALL") {
+          convs = convs.filter(c => c.platform === currentPlatform);
+        }
+        convs.forEach(c => {
+          if (c.daily) {
+            for (const [date, du] of Object.entries(c.daily)) {
+              if (validDates && !validDates.has(date)) continue;
+              if (!dateMap[date]) dateMap[date] = { total: 0, agy: 0, codex: 0, requests: 0 };
+              const tot = du.total || 0;
+              dateMap[date].total += tot;
+              dateMap[date].requests += (du.requests || 0);
+              if (c.platform === "Antigravity") dateMap[date].agy += tot;
+              else dateMap[date].codex += tot;
+            }
+          }
+        });
+      } else {
+        let daily = rawData.daily || [];
+        if (validDates) {
+          daily = daily.filter(d => validDates.has(d.date));
+        }
+        daily.forEach(d => {
+          let agy = 0, codex = 0, tot = 0;
+          if (currentPlatform === "ALL") {
+            agy = d.agy_total || 0;
+            codex = d.codex_total || 0;
+            tot = d.total || (agy + codex);
+          } else if (currentPlatform === "Antigravity") {
+            agy = d.agy_total || 0;
+            tot = agy;
+          } else if (currentPlatform === "Codex") {
+            codex = d.codex_total || 0;
+            tot = codex;
+          }
+          dateMap[d.date] = { total: tot, agy: agy, codex: codex, requests: d.requests || 0 };
+        });
+      }
+
+      for (const [date, val] of Object.entries(dateMap)) {
+        if (val.total > 0) {
+          activeDaysCount++;
+          if (val.total > maxDayToken) maxDayToken = val.total;
+        }
+      }
+
+      if (peakElem) peakElem.textContent = formatCompact(maxDayToken);
+      if (activeDaysElem) activeDaysElem.textContent = `${activeDaysCount}天`;
+
+      if (drilldownDate && drilldownBadge) {
+        drilldownBadge.textContent = `${drilldownDate.slice(5)} 锁定`;
+        drilldownBadge.classList.remove("hidden");
+      } else if (drilldownBadge) {
+        drilldownBadge.classList.add("hidden");
+      }
+
+      // 确定当前年度与起始/结束日期：从 1 月第 1 周排布至 12 月最后一周（全年 53 周，完整展现 1月 ~ 12月 全部 12 个自然月份）
+      let latestDate = new Date();
+      if (rawData.summary && rawData.summary.updated_at) {
+        latestDate = new Date(rawData.summary.updated_at.slice(0, 10));
+      }
+      
+      const currentYear = latestDate.getFullYear();
+      const jan1 = new Date(currentYear, 0, 1);
+      // 周一为 0，周日为 6
+      const jan1Day = (jan1.getDay() + 6) % 7;
+      const gridStartDate = new Date(jan1);
+      gridStartDate.setDate(jan1.getDate() - jan1Day);
+
+      // 计算本年度 12 月 31 日所在周的周日，保证全年 12 个月份全部完整收尾
+      const dec31 = new Date(currentYear, 11, 31);
+      const dec31Day = (dec31.getDay() + 6) % 7;
+      const gridEndDate = new Date(dec31);
+      gridEndDate.setDate(dec31.getDate() + (6 - dec31Day));
+
+      // 全年总周数（整整 53 周，完整涵盖 1月 ~ 12月 全量自然月）
+      const numWeeks = Math.round((gridEndDate - gridStartDate) / (7 * 24 * 60 * 60 * 1000));
+
+      // 精准计算 1月 ~ 12月 各月份起始周（当月1日若为周末则延至周一，确保各月间隔自然均匀为 4~5 周）
+      const monthToWeek = {};
+      const weekToMonth = {};
+      for (let m = 1; m <= 12; m++) {
+        const firstD = new Date(currentYear, m - 1, 1);
+        const dayOfWeek = (firstD.getDay() + 6) % 7; // 0=Mon, 6=Sun
+        let targetD = new Date(firstD);
+        if (dayOfWeek >= 5) {
+          targetD.setDate(firstD.getDate() + (7 - dayOfWeek));
+        }
+        const w = Math.floor((targetD - gridStartDate) / (7 * 24 * 60 * 60 * 1000));
+        if (w >= 0 && w < numWeeks) {
+          monthToWeek[m] = w;
+          weekToMonth[w] = m;
+        }
+      }
+
+      for (let w = 0; w < numWeeks; w++) {
+        const colDiv = document.createElement("div");
+        colDiv.className = "flex flex-col relative";
+        colDiv.style.gap = "2px";
+
+        for (let d = 0; d < 7; d++) {
+          const curDate = new Date(gridStartDate);
+          curDate.setDate(gridStartDate.getDate() + (w * 7 + d));
+          const dateStr = curDate.toISOString().slice(0, 10);
+          const isPriorYear = (curDate.getFullYear() < currentYear);
+          const isNextYear = (curDate.getFullYear() > currentYear);
+          const isFuture = (curDate > latestDate);
+
+          const cell = document.createElement("div");
+          cell.className = "w-full aspect-square rounded-[1.5px] transition-all";
+
+          if (isPriorYear || isNextYear) {
+            cell.className += " opacity-0 pointer-events-none";
+          } else if (isFuture) {
+            // 未来日期：展示为微弱轮廓底色，保持 53 周全景矩阵的整洁完整性
+            cell.className += " bg-slate-800/30 border border-slate-700/20 opacity-35 cursor-default";
+            const weekdayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+            cell.title = `${dateStr} (${weekdayNames[d]})\n未到日期`;
+          } else {
+            cell.className += " cursor-pointer";
+            const item = dateMap[dateStr] || { total: 0, agy: 0, codex: 0, requests: 0 };
+            const tot = item.total;
+            const isSelected = (drilldownDate === dateStr);
+
+            let bgClass = "bg-slate-800/60 border border-slate-700/30";
+            if (tot > 0) {
+              const ratio = maxDayToken > 0 ? (tot / maxDayToken) : 0;
+              if (currentPlatform === "Codex") {
+                if (ratio > 0.7) bgClass = "bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.6)]";
+                else if (ratio > 0.35) bgClass = "bg-purple-600";
+                else if (ratio > 0.12) bgClass = "bg-purple-800";
+                else bgClass = "bg-purple-950 border border-purple-800/40";
+              } else {
+                if (ratio > 0.7) bgClass = "bg-sky-300 shadow-[0_0_6px_rgba(56,189,248,0.7)]";
+                else if (ratio > 0.35) bgClass = "bg-sky-500";
+                else if (ratio > 0.12) bgClass = "bg-blue-600";
+                else bgClass = "bg-blue-900 border border-blue-800/40";
+              }
+            }
+
+            if (isSelected) {
+              cell.className += ` ${bgClass} ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-900 scale-125 z-10`;
+            } else {
+              cell.className += ` ${bgClass} hover:ring-1 hover:ring-white/70 hover:scale-110`;
+            }
+
+            const weekdayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+            const dayName = weekdayNames[d];
+            let tip = `${dateStr} (${dayName})\n消耗: ${formatExact(tot)} Tokens (${formatCompact(tot)})`;
+            if (tot > 0) {
+              tip += `\nAGY: ${formatCompact(item.agy)} | Codex: ${formatCompact(item.codex)}\n交互: ${formatExact(item.requests)} 次\n点击锁定该日项目与明细`;
+            } else {
+              tip += `\n无活动交互`;
+            }
+            cell.title = tip;
+
+            cell.onclick = () => {
+              if (tot > 0 || isSelected) {
+                setDrilldownDate(dateStr);
+              }
+            };
+          }
+          colDiv.appendChild(cell);
+        }
+
+        // 月份标签：作为对应周起始列的底部锚定子元素，0 像素漂移，随列自适应缩放与居中
+        if (weekToMonth[w] !== undefined) {
+          const m = weekToMonth[w];
+          const mLabel = document.createElement("span");
+          mLabel.className = "absolute text-[9px] sm:text-[10px] text-slate-400 font-mono select-none whitespace-nowrap leading-none";
+          mLabel.style.top = "calc(100% + 4px)";
+          mLabel.style.left = "0px";
+          mLabel.textContent = `${m}月`;
+          colDiv.appendChild(mLabel);
+        }
+
+        gridContainer.appendChild(colDiv);
+      }
+    }
+
+    function renderProjectList(filteredConvs) {
+      const pList = document.getElementById("projects-list");
+      const pHeader = document.getElementById("projects-header");
+      const pCount = document.getElementById("projects-total-count");
+      pList.innerHTML = "";
+
+      if (drilldownDate) {
+        pHeader.innerHTML = `
+          <span>📁 当日项目消耗排行</span>
+          <span class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] border border-amber-500/40">${drilldownDate.slice(5)}</span>
+          <button onclick="setDrilldownDate(null)" class="text-[10px] text-amber-400 hover:text-white underline ml-1" title="恢复全部日期">✕ 全部</button>
+        `;
+      } else {
+        pHeader.innerHTML = `
+          <span>📁 项目消耗排行</span>
+          <span class="text-[10px] text-[var(--text-muted)] font-normal">(点击联动走势与明细)</span>
+        `;
+      }
+
+      const pMap = {};
+      let totalForList = 0;
+
+      filteredConvs.forEach(c => {
+        const name = c.project_name || "未绑定项目";
+        const tot = c.total || 0;
+        if (tot > 0 || c.requests > 0) {
+          if (!pMap[name]) {
+            pMap[name] = { name: name, total: 0, agy: 0, codex: 0, convs: 0 };
+          }
+          pMap[name].total += tot;
+          pMap[name].convs += 1;
+          totalForList += tot;
+          if (c.platform === "Antigravity") pMap[name].agy += tot;
+          else pMap[name].codex += tot;
+        }
+      });
+
+      const sortedP = Object.values(pMap).sort((a, b) => b.total - a.total);
+      const listGrandTotal = totalForList || 1;
+      if (pCount) pCount.textContent = `${sortedP.length}个项目`;
+
+      const select = document.getElementById("filter-project");
+      const currentSelected = select.value;
+      select.innerHTML = '<option value="ALL">全部项目</option>';
+
+      if (sortedP.length === 0) {
+        pList.innerHTML = `<div class="col-span-3 py-4 text-center text-slate-500 text-xs">该筛选条件下暂无项目活动</div>`;
+        return;
+      }
+
+      sortedP.forEach((p) => {
+        const pct = ((p.total / listGrandTotal) * 100).toFixed(1);
+
+        const opt = document.createElement("option");
+        opt.value = p.name;
+        opt.textContent = `${p.name} (${p.convs})`;
+        select.appendChild(opt);
+
+        const isSelected = (drilldownProject === p.name);
+        const item = document.createElement("div");
+        item.className = `p-1.5 px-2.5 rounded-md border transition cursor-pointer flex flex-col justify-between shrink-0 whitespace-nowrap overflow-hidden ${
+          isSelected 
+            ? "bg-slate-800/90 border-sky-500 shadow-sm ring-1 ring-sky-500/50" 
+            : "bg-slate-900/50 border-[var(--border-color)]/70 hover:border-sky-500/40 hover:bg-slate-800/40"
+        }`;
+        item.style.height = "40px";
+        item.style.minHeight = "40px";
+        
+        item.onclick = () => setDrilldownProject(p.name);
+
+        const agyPct = p.total > 0 ? (p.agy / p.total) * 100 : 0;
+        const codexPct = p.total > 0 ? (p.codex / p.total) * 100 : 0;
+
+        item.innerHTML = `
+          <div class="flex justify-between items-center text-[11px] mb-1 whitespace-nowrap gap-1 leading-tight">
+            <div class="flex items-center gap-1.5 truncate min-w-0 flex-1 whitespace-nowrap">
+              <span class="font-medium text-[var(--text-main)] truncate block ${isSelected ? "text-sky-300 font-bold" : ""}" title="${p.name}">${p.name}</span>
+              ${isSelected ? '<span class="px-1 text-[8px] rounded bg-sky-500/30 text-sky-200 border border-sky-400/50 font-mono shrink-0">锁定</span>' : ''}
+              ${p.agy > 0 && p.codex > 0 && !isSelected ? '<span class="px-1 text-[8px] rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono shrink-0">双端</span>' : ''}
+            </div>
+            <div class="flex items-center gap-1.5 font-mono text-[10px] shrink-0 whitespace-nowrap">
+              <span class="text-[var(--text-muted)] whitespace-nowrap">${p.convs}会话</span>
+              <span class="font-bold text-sky-400 whitespace-nowrap" title="${formatExact(p.total)} Tokens">${displayVal(p.total)}</span>
+              <span class="text-slate-400 w-8 text-right whitespace-nowrap font-medium">${pct}%</span>
+            </div>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1 overflow-hidden flex shrink-0">
+            <div class="bg-sky-500 h-1 transition-all" style="width: ${agyPct}%" title="Antigravity: ${formatExact(p.agy)}"></div>
+            <div class="bg-purple-500 h-1 transition-all" style="width: ${codexPct}%" title="Codex: ${formatExact(p.codex)}"></div>
+          </div>
+        `;
+        pList.appendChild(item);
+      });
+
+      if (drilldownProject) {
+        select.value = drilldownProject;
+      } else if (currentSelected && Array.from(select.options).some(o => o.value === currentSelected)) {
+        select.value = currentSelected;
+      }
+    }
+
+    function toggleSort() {
+      sortDesc = !sortDesc;
+      renderTable();
+    }
+
+    // 渲染底部对话明细清单：弹性充满剩余空间，吸顶表头
+    function renderTable(providedConvs = null) {
+      if (!rawData) return;
+      const container = document.getElementById("details-container");
+      container.innerHTML = "";
+
+      const selectedProj = document.getElementById("filter-project").value;
+      const searchKey = document.getElementById("filter-search").value.trim().toLowerCase();
+
+      let list = providedConvs || rawData.conversations;
+
+      list = list.filter(c => {
+        if (currentPlatform !== "ALL" && c.platform !== currentPlatform) return false;
+        if (drilldownProject && c.project_name !== drilldownProject) return false;
+        else if (selectedProj !== "ALL" && c.project_name !== selectedProj) return false;
+        if (searchKey) {
+          const matchTitle = (c.title || "").toLowerCase().includes(searchKey);
+          const matchCid = (c.cid || "").toLowerCase().includes(searchKey);
+          const matchProj = (c.project_name || "").toLowerCase().includes(searchKey);
+          const matchPlat = (c.platform || "").toLowerCase().includes(searchKey);
+          if (!matchTitle && !matchCid && !matchProj && !matchPlat) return false;
+        }
+        return true;
+      });
+
+      list.sort((a, b) => sortDesc ? (b.total - a.total) : (a.total - b.total));
+      document.getElementById("filtered-count").textContent = `${list.length} 个对话`;
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">无匹配对话记录</div>`;
+        return;
+      }
+
+      const maxTotal = Math.max(...list.map(c => c.total), 1);
+      const isNarrow = window.innerWidth < 680;
+      const useCards = (viewMode === "cards") || (viewMode === "auto" && isNarrow);
+
+      if (useCards) {
+        const cardList = document.createElement("div");
+        cardList.className = "flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-1 pr-1";
+
+        list.forEach(c => {
+          const card = document.createElement("div");
+          card.className = "p-1.5 px-2 rounded bg-slate-900/50 border border-[var(--border-color)]/70 hover:border-sky-500/40 hover:bg-slate-800/40 transition relative overflow-hidden";
+          
+          const pctOfMax = Math.min(Math.round((c.total / maxTotal) * 100), 100);
+          const platBadge = c.platform === "Codex" 
+            ? `<span class="px-1 py-0.2 rounded text-[9px] bg-purple-500/15 text-purple-400 border border-purple-500/30 font-medium">Codex</span>`
+            : `<span class="px-1 py-0.2 rounded text-[9px] bg-sky-500/15 text-sky-400 border border-sky-500/30 font-medium">AGY</span>`;
+
+          card.innerHTML = `
+            <div class="data-bar-bg bg-sky-500/10" style="width: ${pctOfMax}%"></div>
+            <div class="relative z-10 flex items-center justify-between gap-2 whitespace-nowrap">
+              <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate whitespace-nowrap">
+                ${platBadge}
+                <span class="font-medium text-slate-100 truncate text-[11px] whitespace-nowrap" title="${c.title} (${c.cid})">${c.title}</span>
+                <span class="text-[9px] text-slate-400 font-mono truncate max-w-[120px] whitespace-nowrap shrink-0">${c.project_name}</span>
+              </div>
+              <div class="flex items-center gap-2 font-mono text-[10px] shrink-0 whitespace-nowrap">
+                <span class="text-amber-400/90 whitespace-nowrap" title="输出: ${formatExact(c.output)}">出:${displayVal(c.output)}</span>
+                <span class="text-emerald-400/90 whitespace-nowrap" title="缓存读取: ${formatExact(c.cache)}">缓:${displayVal(c.cache)}</span>
+                <span class="font-bold text-sky-400 ml-1 whitespace-nowrap" title="${formatExact(c.total)} Tokens">${displayVal(c.total)}</span>
+              </div>
+            </div>
+          `;
+          cardList.appendChild(card);
+        });
+
+        container.appendChild(cardList);
+      } else {
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex-1 min-h-0 overflow-auto custom-scrollbar border border-[var(--border-color)]/50 rounded";
+        
+        const table = document.createElement("table");
+        table.className = "w-full text-left text-xs whitespace-nowrap min-w-max";
+        table.innerHTML = `
+          <thead class="sticky top-0 bg-slate-900 shadow-sm z-10 text-[10px] text-[var(--text-muted)] border-b border-[var(--border-color)] uppercase tracking-wider font-semibold whitespace-nowrap">
+            <tr class="whitespace-nowrap">
+              <th class="py-1 px-2.5 whitespace-nowrap">平台</th>
+              <th class="py-1 px-2.5 whitespace-nowrap">最后活跃</th>
+              <th class="py-1 px-2.5 whitespace-nowrap">所属项目</th>
+              <th class="py-1 px-2.5 whitespace-nowrap">对话标题</th>
+              <th class="py-1 px-2.5 text-right whitespace-nowrap">输出</th>
+              <th class="py-1 px-2.5 text-right whitespace-nowrap">输入</th>
+              <th class="py-1 px-2.5 text-right whitespace-nowrap">缓存读取</th>
+              <th class="py-1 px-2.5 text-right cursor-pointer hover:text-sky-400 select-none whitespace-nowrap w-28" onclick="toggleSort()">
+                总消耗 ${sortDesc ? "↓" : "↑"}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border-color)]/60 text-[var(--text-main)] text-[11px] whitespace-nowrap"></tbody>
+        `;
+
+        const tbody = table.querySelector("tbody");
+
+        list.forEach(c => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-800/40 transition group whitespace-nowrap h-7";
+          
+          const pctOfMax = Math.min(Math.round((c.total / maxTotal) * 100), 100);
+          const platBadge = c.platform === "Codex" 
+            ? `<span class="px-1 py-0.2 rounded text-[9px] bg-purple-500/15 text-purple-400 border border-purple-500/30 font-medium whitespace-nowrap">Codex</span>`
+            : `<span class="px-1 py-0.2 rounded text-[9px] bg-sky-500/15 text-sky-400 border border-sky-500/30 font-medium whitespace-nowrap">AGY</span>`;
+
+          tr.innerHTML = `
+            <td class="py-1 px-2.5 whitespace-nowrap shrink-0">${platBadge}</td>
+            <td class="py-1 px-2.5 text-[var(--text-muted)] font-mono whitespace-nowrap text-[10px]">${c.last_time ? c.last_time.slice(5) : "未知"}</td>
+            <td class="py-1 px-2.5 whitespace-nowrap">
+              <span class="px-1.5 py-0.2 rounded text-[10px] bg-slate-800 text-slate-200 border border-slate-700 font-medium max-w-[130px] truncate inline-block align-middle whitespace-nowrap" title="${c.project_name}">${c.project_name}</span>
+            </td>
+            <td class="py-1 px-2.5 font-medium text-[var(--text-main)] max-w-[260px] truncate whitespace-nowrap" title="${c.title} (${c.cid})">${c.title}</td>
+            <td class="py-1 px-2.5 text-right font-mono text-amber-400/90 text-[10px] whitespace-nowrap">${displayVal(c.output)}</td>
+            <td class="py-1 px-2.5 text-right font-mono text-purple-400/90 text-[10px] whitespace-nowrap">${displayVal(c.input)}</td>
+            <td class="py-1 px-2.5 text-right font-mono text-emerald-400/90 text-[10px] whitespace-nowrap">${displayVal(c.cache)}</td>
+            <td class="py-1 px-2.5 text-right relative overflow-hidden whitespace-nowrap">
+              <div class="data-bar-bg bg-sky-500/15" style="width: ${pctOfMax}%"></div>
+              <span class="relative z-10 font-mono font-bold text-sky-400 whitespace-nowrap" title="${formatExact(c.total)} Tokens">${displayVal(c.total)}</span>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        wrapper.appendChild(table);
+        container.appendChild(wrapper);
+      }
+    }
+
+    function exportCSV() {
+      if (!rawData || !rawData.conversations || rawData.conversations.length === 0) {
+        alert("暂无可用会话数据可导出");
+        return;
+      }
+      const headers = ["所属平台", "Conversation ID", "所属项目", "项目路径", "对话标题", "最后活跃时间", "输入Tokens", "输出Tokens", "缓存读取Tokens", "总Tokens", "请求次数"];
+      const rows = rawData.conversations.map(c => [
+        c.platform || "Antigravity",
+        c.cid || "",
+        `"${(c.project_name || "").replace(/"/g, '""')}"`,
+        `"${(c.project_path || "").replace(/"/g, '""')}"`,
+        `"${(c.title || "").replace(/"/g, '""')}"`,
+        c.last_time || "",
+        c.input || 0,
+        c.output || 0,
+        c.cache || 0,
+        c.total || 0,
+        c.requests || 0
+      ]);
+      const csvContent = "\ufeff" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `token_usage_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+    }
+
+    function openRestartModal() {
+      const modal = document.getElementById("restart-modal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        const statusText = document.getElementById("modal-status-text");
+        if (statusText) statusText.classList.add("hidden");
+        const btnConfirm = document.getElementById("btn-modal-confirm");
+        if (btnConfirm) btnConfirm.disabled = false;
+        const btnCancel = document.getElementById("btn-modal-cancel");
+        if (btnCancel) btnCancel.disabled = false;
+      }
+    }
+
+    function closeRestartModal() {
+      const modal = document.getElementById("restart-modal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    async function doRestartPlugin() {
+      const statusText = document.getElementById("modal-status-text");
+      const statusMsg = document.getElementById("modal-status-msg");
+      const btnConfirm = document.getElementById("btn-modal-confirm");
+      const btnCancel = document.getElementById("btn-modal-cancel");
+      const headerBtn = document.getElementById("btn-restart");
+      const headerIcon = document.getElementById("icon-restart");
+
+      if (btnConfirm) btnConfirm.disabled = true;
+      if (btnCancel) btnCancel.disabled = true;
+      if (statusText) statusText.classList.remove("hidden");
+      if (headerIcon) headerIcon.classList.add("animate-spin");
+      if (headerBtn) headerBtn.disabled = true;
+
+      try {
+        const res = await fetch("/api/restart", { method: "POST" });
+        if (res.ok) {
+          if (statusMsg) statusMsg.textContent = "重扫完成，正在刷新页面...";
+          setTimeout(() => {
+            window.location.reload();
+          }, 400);
+          return;
+        }
+      } catch (e) {
+        // 服务响应异常或断开时进入轮询
+      }
+
+      let retries = 0;
+      const poll = setInterval(async () => {
+        retries++;
+        try {
+          const res = await fetch("/api/tokens", { cache: "no-store" });
+          if (res.ok) {
+            clearInterval(poll);
+            window.location.reload();
+          }
+        } catch(err) {
+          if (retries > 30) {
+            clearInterval(poll);
+            if (statusMsg) statusMsg.textContent = "重启超时，请按 F5 手动刷新";
+            if (btnCancel) btnCancel.disabled = false;
+          }
+        }
+      }, 600);
+    }
+
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (viewMode === "auto") renderTable();
+      }, 150);
+    });
+
+    function initDashboard() {
+      if (window.INITIAL_TOKEN_DATA) {
+        rawData = window.INITIAL_TOKEN_DATA;
+        renderDashboard();
+      }
+      fetchData(false);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDashboard);
+    } else {
+      initDashboard();
+    }
+  </script>
+
+<!-- 自定义弹窗：重启插件服务确认 (100% 兼容 Webview，无原生 confirm 拦截) -->
+  <div id="restart-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full shadow-2xl p-5 text-left transform transition-all animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🔄</span>
+          <h3 class="text-base font-bold text-white tracking-tight">重启 Token 统计服务</h3>
+        </div>
+        <button onclick="closeRestartModal()" class="text-slate-400 hover:text-white text-base font-bold px-2 py-1 rounded hover:bg-slate-800 transition">✕</button>
+      </div>
+
+      <div class="mt-3.5 space-y-3 text-xs text-slate-300 leading-relaxed">
+        <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300">
+          <div class="font-semibold flex items-center gap-1.5 mb-1 text-[13px]">
+            <span>⚠️</span> 确认重新全量扫描？
+          </div>
+          <div class="text-[12px] text-amber-200/90 leading-normal">
+            重启将清除本地中间缓存，强制重新深层扫描 Antigravity 与 Codex 双端所有对话记录与 Token 用量，并重新生成统计大盘。
+          </div>
+        </div>
+        <div id="modal-status-text" class="text-xs text-sky-400 font-mono hidden flex items-center gap-2 py-1">
+          <svg class="w-4 h-4 animate-spin text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span id="modal-status-msg">正在重启服务并全量重扫描会话...</span>
+        </div>
+      </div>
+
+      <div class="mt-5 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+        <button id="btn-modal-cancel" onclick="closeRestartModal()" class="px-4 py-2 rounded-lg text-xs bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition font-medium">取消</button>
+        <button id="btn-modal-confirm" onclick="doRestartPlugin()" class="px-4 py-2 rounded-lg text-xs bg-amber-600 hover:bg-amber-500 text-white font-medium transition shadow-sm flex items-center gap-1.5">
+          <span>确认重启并重扫</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
