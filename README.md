@@ -47,8 +47,13 @@ Antigravity Token Calculator 依托 Antigravity 原生 UI Sidecar 架构构建�
 - Python 3.8+（支持 Windows 官方 `py` 启动器）
 - Google Antigravity 2.0+
 
-### 一键安装
-在 PowerShell 中执行以下命令，将插件克隆至 Antigravity 用户插件目录：
+### 方式 1：直接让 Agent 自动安装（推荐 · 免切终端）
+直接复制以下一句话发送给当前对话中的 Agent 即可全自动安装完成：
+
+> 帮我安装 Token 统计插件：https://github.com/Summer-kk/antigravity-token-calculator.git
+
+### 方式 2：手动终端安装（PowerShell）
+打开 Windows PowerShell，执行以下一行命令克隆至插件目录：
 
 ```powershell
 git clone https://github.com/Summer-kk/antigravity-token-calculator.git "$HOME\.gemini\config\plugins\token-calculator"
@@ -60,11 +65,14 @@ git clone https://github.com/Summer-kk/antigravity-token-calculator.git "$HOME\.
 
 ## 使用方式
 
-1. **通过原生侧边栏链接打开**：
-   在任意对话中直接点击下方协议链接，即可在辅助窗格中唤起统计大盘：
+1. **界面直接打开**：
+   打开侧边栏 -> 扩展 -> Token 统计 即可直接唤起仪表盘面板。
+
+2. **协议链接直达**：
+   在任意对话或文档中点击下方专属协议链接，主程序将直接在侧边栏唤起面板：
    `sidecar://token-calculator/token-dashboard/`
 
-2. **通过 Agent 自然语言交互**：
+3. **通过 Agent 自然语言交互**：
    在对话中向 Agent 发送如下指令，Agent 将自动提供侧边栏入口：
    - “打开 Token 统计侧边栏仪表盘”
    - “查看最近各项目 Token 消耗”
