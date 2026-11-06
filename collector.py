@@ -7,6 +7,7 @@ import sqlite3
 import tempfile
 import shutil
 import urllib.parse
+import urllib.request
 from collections import defaultdict
 from datetime import datetime
 
@@ -59,13 +60,11 @@ def load_agy_metadata():
                         uris = json.loads(workspace_uris)
                         if uris and isinstance(uris, list) and len(uris) > 0:
                             decoded = urllib.parse.unquote(uris[0])
-                            if decoded.startswith("file:///"):
-                                project_path = decoded[8:]
-                            elif decoded.startswith("file://"):
-                                project_path = decoded[7:]
+                            if decoded.startswith("file://"):
+                                parsed_path = urllib.parse.urlparse(decoded).path
+                                project_path = urllib.request.url2pathname(parsed_path)
                             else:
-                                project_path = decoded
-                            project_path = project_path.replace("/", os.sep)
+                                project_path = decoded.replace("/", os.sep)
                             project_name = os.path.basename(project_path.rstrip(r"\/")) or project_path
                     except Exception:
                         pass
