@@ -1,8 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
-  <rect width="128" height="128" rx="28" fill="#1E293B"/>
-  <path d="M64 20C39.699 20 20 39.699 20 64C20 88.301 39.699 108 64 108C88.301 108 108 88.301 108 64C108 39.699 88.301 20 64 20Z" stroke="#38BDF8" stroke-width="6" stroke-dasharray="6 4"/>
-  <rect x="36" y="66" width="12" height="26" rx="4" fill="#38BDF8"/>
-  <rect x="58" y="48" width="12" height="44" rx="4" fill="#818CF8"/>
-  <rect x="80" y="36" width="12" height="56" rx="4" fill="#34D399"/>
-  <circle cx="64" cy="64" r="8" fill="#F43F5E"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="barSky" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="barIndigo" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#818CF8" />
+    </linearGradient>
+    <linearGradient id="barEmerald" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+    <linearGradient id="meterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect width="128" height="128" rx="28" fill="url(#bgGrad)" stroke="#1E293B" stroke-width="2" />
+
+  <!-- Outer Meter Track (Subtle background orbit) -->
+  <circle cx="64" cy="62" r="42" stroke="#1E293B" stroke-width="4" stroke-linecap="round" fill="none" />
+  <!-- Active Arc (Progress highlight) -->
+  <circle cx="64" cy="62" r="42" stroke="url(#meterGrad)" stroke-width="4" stroke-dasharray="160 264" stroke-linecap="round" fill="none" transform="rotate(-90 64 62)" />
+
+  <!-- Analytics Token Bars (Input / Cache / Output & Dual Platforms) -->
+  <!-- Bar 1: Input (Sky) -->
+  <rect x="37" y="56" width="12" height="30" rx="3.5" fill="url(#barSky)" />
+  <!-- Bar 2: Main / Cache (Indigo) - Tallest -->
+  <rect x="58" y="38" width="12" height="48" rx="3.5" fill="url(#barIndigo)" />
+  <!-- Bar 3: Output (Emerald) -->
+  <rect x="79" y="48" width="12" height="38" rx="3.5" fill="url(#barEmerald)" />
+
+  <!-- Core Metric Node (Token Accent) -->
+  <circle cx="64" cy="38" r="3.5" fill="#38BDF8" stroke="#0F172A" stroke-width="1.5" />
+
+  <!-- Activity Indicator Nodes (Clean, centered at bottom) -->
+  <circle cx="52" cy="100" r="2.5" fill="#38BDF8" />
+  <circle cx="64" cy="100" r="2.5" fill="#818CF8" />
+  <circle cx="76" cy="100" r="2.5" fill="#34D399" />
 </svg>

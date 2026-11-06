@@ -1,19 +1,17 @@
-# Antigravity Token Calculator (Token 消耗统计插件)
+# Antigravity Token Calculator
 
 <p align="center">
-  <img src="assets/logo.svg" alt="Token Calculator Logo" width="100" height="100" />
+  <img src="assets/logo.svg" alt="Token Calculator Logo" width="96" height="96" />
 </p>
 
 <p align="center">
-  <b>Google Antigravity 2.0 原生可视化侧边栏仪表盘 · 双端 Token 消耗分析与项目账单</b>
+  <b>Google Antigravity 2.0 原生侧边栏 Token 消耗统计与多项目用量分析插件</b>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Antigravity-2.0+-blue?style=flat-square" alt="Antigravity 2.0+">
-  <img src="https://img.shields.io/badge/Dependencies-0%20(Pure%20Stdlib)-emerald?style=flat-square" alt="Zero Dependencies">
-  <img src="https://img.shields.io/badge/Platform-Windows%20(10%2F11)-sky?style=flat-square" alt="Windows Platform">
-  <img src="https://img.shields.io/badge/Python-3.8+%20(py)-purple?style=flat-square" alt="Python py launcher">
-  <img src="https://img.shields.io/badge/License-MIT-amber?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/Platform-Windows%20(10%2F11)-sky?style=flat-square" alt="Platform Windows">
+  <img src="https://img.shields.io/badge/License-MIT-emerald?style=flat-square" alt="License MIT">
 </p>
 
 <p align="center">
@@ -22,98 +20,61 @@
 
 ---
 
-## 🌟 为什么需要本插件？
+## 项目简介
 
-在使用 Google Antigravity 与 Codex 进行日常多项目编程时，**Tokens 的实际消耗分布**（各项目占比、高频活跃日、缓存命中收益等）往往分散在各端本地的日志与数据库深处，缺乏统一透明的可视化视图。
+在多项目开发与长程会话场景中，各工程与对话的 Token 实际用量分布往往分散在本地日志与缓存深处，缺乏统一透明的跨端统计视图。
 
-**Antigravity Token Calculator** 专为解决这一痛点而生：
-- 零侵入对话上下文，不消耗任何对话 Token；
-- 依托 Antigravity 原生 **UI Sidecar** 体系，在侧边栏提供独立的可视化大盘；
-- 纯本地原生解析双端（Antigravity + Codex）日志与元数据，无任何外部网络请求与隐私泄漏风险。
+Antigravity Token Calculator 依托 Antigravity 原生 UI Sidecar 架构构建，独立运行于辅助窗格中。它在不侵入对话上下文、不消耗对话 Token 的前提下，全本地原生解析双端（Antigravity 与 Codex）元数据与交互日志，提供多维度的用量指标、自适应活动大盘及一键数据导出能力。
 
 ---
 
-## ✨ 核心特性
+## 核心功能
 
-- ⚡ **双端统一聚合**：自动整合 Antigravity 与 Codex 本地全量对话元数据与用量日志，支持「全部汇总 / Antigravity / Codex」一键无感切换。
-- 📅 **53 周自适应热力图**：
-  - 完整呈现 1 月至 12 月全年 53 周活动轨迹；
-  - 采用 CSS Grid 弹性自适应渲染，**严格居中贴合，物理杜绝横向滚动条**；
-  - 智能感知点击日期，一键快速下钻筛选当日全部对话。
-- 📊 **四大核心指标与双端配比**：
-  - 实时统计全平台总消耗、总请求轮次、缓存读取收益与总会话数；
-  - 动态双端消耗比例条，直观对比两大平台 Token 占比与对话分布。
-- 📁 **项目消耗排行与双向联动下钻**：
-  - 自动汇总各项目工程用量排行与占比进度条；
-  - 支持点击项目卡片进行下钻，顶部 Chip 即时显示过滤状态，随时一键清除。
-- 💬 **会话明细与毫秒级即时检索**：
-  - 支持按时间周期（全部 / 今天 / 7天 / 14天 / 30天）多维过滤；
-  - 内置客户端毫秒级实时搜索，标题、项目名称瞬间触达。
-- 📥 **双通道 CSV 导出**：
-  - 支持一键导出包含 UTF-8 BOM 的完整结构化账单；
-  - 后端直接保存至系统「下载」目录（`~/Downloads`），同时前端触发下载与状态提示，双重保障。
-- 🔒 **零第三方依赖 (Zero Dependencies)**：
-  - 后端仅依赖 Python 原生标准库（`sqlite3`、`json`、`http.server`），**无需 `pip install` 任何额外库**；
-  - 前端纯原生 HTML5/Tailwind，轻巧敏捷，秒级加载。
+- **双端统一聚合**：自动整合 Antigravity 与 Codex 本地全量会话日志与元数据，支持全平台汇总与单端无感切换。
+- **53 周自适应活动热力图**：完整呈现 1 月至 12 月全年 53 周活动轨迹，采用弹性自适应网格排布，横纵坐标智能居中贴合，彻底消除横向滚动条；支持点击单日即时下钻筛选当日明细。
+- **核心用量指标与双端配比**：实时汇总全平台总消耗、总请求次数、缓存命中收益及有效会话数，配备双端消耗占比条直观呈现平台分布。
+- **按项目排行与多维联动**：自动归类工程项目用量排行与占比进度条，支持项目卡片点击下钻与顶部过滤标签快速清除联动。
+- **会话明细与客户端秒搜**：支持按时间周期（全部 / 今天 / 7天 / 14天 / 30天）多维过滤，内置毫秒级客户端全文检索，快速定位目标对话。
+- **双通道账单导出**：支持一键导出包含 UTF-8 BOM 的完整结构化 CSV 报表，后端直存系统「下载」目录与前端触发下载双重保障。
+- **零外部依赖**：后端完全基于 Python 3 标准库（`sqlite3`、`json`、`http.server`），前端采用原生 HTML5 与 Tailwind，无需执行任何 `pip install` 即可开箱即用。
 
 ---
 
-## 🚀 一键安装方法 (Windows)
+## 安装指引 (Windows)
 
-在 PowerShell 中执行以下一行命令，即可将插件克隆至 Antigravity 插件目录，开箱即用：
+### 环境要求
+- Windows 10 / 11
+- Python 3.8+（支持 Windows 官方 `py` 启动器）
+- Google Antigravity 2.0+
+
+### 一键安装
+在 PowerShell 中执行以下命令，将插件克隆至 Antigravity 用户插件目录：
 
 ```powershell
 git clone https://github.com/Summer-kk/antigravity-token-calculator.git "$HOME\.gemini\config\plugins\token-calculator"
 ```
 
-> **提示**：克隆完成后，在 Antigravity 侧边栏即可直接点击开启。默认直接使用 Windows 官方 Python 启动器 `py`，零外部依赖，无需 `pip install` 任何库。
+克隆完成后无需重启主程序，插件将自动加载。
 
 ---
 
-## 💡 使用方式
+## 使用方式
 
-1. **直接点击原生侧边栏链接**：
-   在任何对话中点击：
+1. **通过原生侧边栏链接打开**：
+   在任意对话中直接点击下方协议链接，即可在辅助窗格中唤起统计大盘：
    `sidecar://token-calculator/token-dashboard/`
-   即可立即在侧边辅助窗格打开专属统计大盘。
 
-2. **与 Agent 自然交互**：
-   在聊天窗口中直接向 Agent 发送：
-   - *“打开 Token 统计侧边栏仪表盘”*
-   - *“查看最近各项目 Token 消耗”*
-   - *“导出全量 Token 消耗明细为 CSV”*
-   
-   Agent 将自动引导您打开原生侧边栏。
+2. **通过 Agent 自然语言交互**：
+   在对话中向 Agent 发送如下指令，Agent 将自动提供侧边栏入口：
+   - “打开 Token 统计侧边栏仪表盘”
+   - “查看最近各项目 Token 消耗”
+   - “导出全量 Token 消耗明细为 CSV”
 
 ---
 
-## 📁 项目结构
+## 数据接口说明
 
-```text
-token-calculator/
-├── .gitignore               # 规范的 Git 忽略清单
-├── LICENSE                  # MIT 开源许可证
-├── README.md                # 项目文档
-├── plugin.json              # 插件核心清单
-├── assets/
-│   ├── logo.svg             # 插件矢量图标
-│   ├── preview.html         # 脱敏预览大盘页面
-│   └── preview.png          # 大盘预览截图
-├── rules/
-│   └── AGENTS.md            # Agent 行为规范与侧窗入口指引
-└── sidecars/
-    └── token-dashboard/
-        ├── sidecar.json     # Sidecar 启动与挂载配置
-        ├── server.py        # 极简 HTTP 路由服务 (含进程重启与导出)
-        ├── collector.py     # 双端 Token 数据统一采集引擎
-        └── index.html       # 原生前端可视化仪表盘
-```
-
----
-
-## 🛠️ 数据接口说明
-
-`server.py` 内置轻量 API 服务：
+Sidecar 后端内置轻量 HTTP API 服务：
 
 | 接口路由 | 请求方式 | 功能描述 |
 | :--- | :--- | :--- |
@@ -125,13 +86,30 @@ token-calculator/
 
 ---
 
-## 🤝 贡献与反馈
+## 架构与文件结构
 
-欢迎提交 Issue 或 Pull Request 共同改进！
-如果您觉得这个插件对您有帮助，欢迎点亮右上角的 ⭐️ **Star**！
+```text
+antigravity-token-calculator/
+├── .gitignore               # Git 忽略规则清单
+├── LICENSE                  # MIT 开源许可证
+├── README.md                # 项目文档
+├── plugin.json              # 插件核心清单与元数据
+├── assets/
+│   ├── logo.svg             # 插件矢量图标 (128x128)
+│   ├── preview.png          # 视网膜高清脱敏预览图
+│   └── preview.html         # 离线交互演示页面
+├── rules/
+│   └── AGENTS.md            # Agent 行为规范与侧窗入口指引
+└── sidecars/
+    └── token-dashboard/
+        ├── sidecar.json     # Sidecar 启动规格与命令配置 (command: "py")
+        ├── server.py        # 本地 HTTP 路由服务 (含进程重启与双通道导出)
+        ├── collector.py     # 双端 Token 统计与元数据解析聚合引擎
+        └── index.html       # 原生前端可视化仪表盘
+```
 
 ---
 
-## 📄 开源许可
+## 开源协议
 
 本项目遵循 [MIT License](LICENSE) 开源协议。
