@@ -1,18 +1,25 @@
-# Python
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
-*.pyc
+*.pyd
+*.pyo
 
-# Local generated snapshot with personal chat data
-token_dashboard.html
-
-# Local caches
-*.cache
-token_tracker_cache.json
-
-# OS and Editor files
+# Operating System Files
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# IDE & Editor
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Temporary snapshots & logs
+*.log
+token_dashboard.html
+token_tracker_cache.json
+_sidecars_backup/
+temp/
+scratch/

@@ -2,13 +2,21 @@
   "name": "token-calculator",
   "displayName": "Token 消耗统计",
   "version": "1.0.0",
-  "description": "Google Antigravity 本地 Token 消耗与各项目用量可视化分析侧边栏面板（双端统一：Antigravity + Codex）",
+  "description": "Antigravity 2.0 原生 Token 消耗统计侧边栏插件 (Windows 专属 · 双端统一 · 零依赖)",
   "author": {
     "name": "Summer-kk"
   },
-  "repository": "https://github.com/Summer-kk/token-calculator",
   "homepage": "https://github.com/Summer-kk/token-calculator",
+  "repository": "https://github.com/Summer-kk/token-calculator",
   "logo": "assets/logo.svg",
+  "keywords": [
+    "antigravity",
+    "codex",
+    "token",
+    "calculator",
+    "dashboard",
+    "sidecar"
+  ],
   "suggestedPrompts": [
     "打开 Token 统计侧边栏仪表盘",
     "更新本地各项目 Token 消耗数据",

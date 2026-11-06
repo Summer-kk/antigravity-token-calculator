@@ -1,89 +1,112 @@
-# Antigravity Token 统计仪表盘插件 (`token-calculator`)
+# Antigravity Token Calculator (Token 消耗统计插件)
 
-[![Antigravity](https://img.shields.io/badge/Antigravity-2.0-blue?logo=google)](https://antigravity.google)
-[![Windows](https://img.shields.io/badge/OS-Windows-0078D6?logo=windows&logoColor=white)](#)
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Dependencies](https://img.shields.io/badge/Dependencies-Zero-success)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <img src="assets/logo.svg" alt="Token Calculator Logo" width="100" height="100" />
+</p>
 
-一个专为 **Google Antigravity**（Windows 端）打造的原生 HTML 侧边栏仪表盘插件（UI Sidecar）。
+<p align="center">
+  <b>Google Antigravity 2.0 原生可视化侧边栏仪表盘 · 双端 Token 消耗分析与项目账单</b>
+</p>
 
-无需大模型推理（无 Skill），无需配置工具协议（无 MCP），**纯本地原生可视化展示双端（Antigravity + Codex）所有项目与对话的 Token 消耗分布**。
+<p align="center">
+  <img src="https://img.shields.io/badge/Antigravity-2.0+-blue?style=flat-square" alt="Antigravity 2.0+">
+  <img src="https://img.shields.io/badge/Dependencies-0%20(Pure%20Stdlib)-emerald?style=flat-square" alt="Zero Dependencies">
+  <img src="https://img.shields.io/badge/Platform-Windows%20(10%2F11)-sky?style=flat-square" alt="Windows Platform">
+  <img src="https://img.shields.io/badge/Python-3.8+%20(py)-purple?style=flat-square" alt="Python py launcher">
+  <img src="https://img.shields.io/badge/License-MIT-amber?style=flat-square" alt="License">
+</p>
+
+<p align="center">
+  <img src="assets/preview.png" alt="Antigravity Token Calculator Preview" width="480" />
+</p>
+
+---
+
+## 🌟 为什么需要本插件？
+
+在使用 Google Antigravity 与 Codex 进行日常多项目编程时，**Tokens 的实际消耗分布**（各项目占比、高频活跃日、缓存命中收益等）往往分散在各端本地的日志与数据库深处，缺乏统一透明的可视化视图。
+
+**Antigravity Token Calculator** 专为解决这一痛点而生：
+- 零侵入对话上下文，不消耗任何对话 Token；
+- 依托 Antigravity 原生 **UI Sidecar** 体系，在侧边栏提供独立的可视化大盘；
+- 纯本地原生解析双端（Antigravity + Codex）日志与元数据，无任何外部网络请求与隐私泄漏风险。
 
 ---
 
 ## ✨ 核心特性
 
-- ⚡ **双端统一统计**：聚合 Antigravity 与 Codex 本地全量对话元数据与交互日志。
-- 📅 **53 周自适应热力图**：完整排布 1 月至 12 月全年 53 周活动大盘，横纵坐标智能居中贴合，**物理无横向/纵向滑动条**。
-- ⚖️ **双端消耗比例条**：动态直观对比 Antigravity 与 Codex 的消耗占比与会话数。
-- 📁 **项目消耗排行**：智能归类统计各工程项目占比，支持点击卡片与明细实时联动下钻。
-- 💬 **会话明细清单**：支持按平台、时间周期（全部/今天/7天/14天/30天）、项目及点击日期多重交叉过滤，内置毫秒级即时搜索。
-- 📊 **一键导出 CSV**：随时导出包含 UTF-8 BOM 的完整结构化账单报表，自动保存至系统「下载」目录，方便 Excel 二次分析。
-- 🔒 **100% 纯本地隐私安全**：完全基于 Python 标准库解析本地 SQLite 与 JSONL 日志，**零网络请求、零外部依赖（无需 `pip install`）、零隐私泄漏风险**。
+- ⚡ **双端统一聚合**：自动整合 Antigravity 与 Codex 本地全量对话元数据与用量日志，支持「全部汇总 / Antigravity / Codex」一键无感切换。
+- 📅 **53 周自适应热力图**：
+  - 完整呈现 1 月至 12 月全年 53 周活动轨迹；
+  - 采用 CSS Grid 弹性自适应渲染，**严格居中贴合，物理杜绝横向滚动条**；
+  - 智能感知点击日期，一键快速下钻筛选当日全部对话。
+- 📊 **四大核心指标与双端配比**：
+  - 实时统计全平台总消耗、总请求轮次、缓存读取收益与总会话数；
+  - 动态双端消耗比例条，直观对比两大平台 Token 占比与对话分布。
+- 📁 **项目消耗排行与双向联动下钻**：
+  - 自动汇总各项目工程用量排行与占比进度条；
+  - 支持点击项目卡片进行下钻，顶部 Chip 即时显示过滤状态，随时一键清除。
+- 💬 **会话明细与毫秒级即时检索**：
+  - 支持按时间周期（全部 / 今天 / 7天 / 14天 / 30天）多维过滤；
+  - 内置客户端毫秒级实时搜索，标题、项目名称瞬间触达。
+- 📥 **双通道 CSV 导出**：
+  - 支持一键导出包含 UTF-8 BOM 的完整结构化账单；
+  - 后端直接保存至系统「下载」目录（`~/Downloads`），同时前端触发下载与状态提示，双重保障。
+- 🔒 **零第三方依赖 (Zero Dependencies)**：
+  - 后端仅依赖 Python 原生标准库（`sqlite3`、`json`、`http.server`），**无需 `pip install` 任何额外库**；
+  - 前端纯原生 HTML5/Tailwind，轻巧敏捷，秒级加载。
 
 ---
 
-## 📦 安装指南 (Windows)
+## 🚀 一键安装方法 (Windows)
 
-### 方式 1：Git Clone 极速安装（推荐）
-
-打开 Windows PowerShell，直接将本项目克隆到 Antigravity 全局插件配置目录：
+在 PowerShell 中执行以下一行命令，即可将插件克隆至 Antigravity 插件目录，开箱即用：
 
 ```powershell
 git clone https://github.com/Summer-kk/token-calculator.git "$HOME\.gemini\config\plugins\token-calculator"
 ```
 
-克隆完成后重启 Antigravity，即可在插件管理器中识别并自动激活。
+> **提示**：克隆完成后，在 Antigravity 侧边栏即可直接点击开启。默认直接使用 Windows 官方 Python 启动器 `py`，零外部依赖，无需 `pip install` 任何库。
 
 ---
 
-### 方式 2：手动下载 Release
+## 💡 使用方式
 
-1. 在 GitHub Releases 页面下载最新的 `token-calculator.zip`；
-2. 解压并将文件夹重命名为 `token-calculator`；
-3. 将该文件夹放置到您的用户配置目录下：
-   `%USERPROFILE%\.gemini\config\plugins\token-calculator`
-4. 重启 Antigravity。
+1. **直接点击原生侧边栏链接**：
+   在任何对话中点击：
+   `sidecar://token-calculator/token-dashboard/`
+   即可立即在侧边辅助窗格打开专属统计大盘。
 
----
-
-## 🚀 使用方法
-
-### 1. 在 Antigravity 原生界面中使用
-
-插件激活后，支持以下方式随时呼出仪表盘：
-- **原生侧窗快捷链接**：在任意对话中点击或发送 `sidecar://token-calculator/token-dashboard/`；
-- **侧边栏挂载**：在 Antigravity 2.0 辅助侧窗（Auxiliary Pane）的视图列表中选择 **Token 统计**。
-
-### 2. 独立浏览器预览（可选）
-
-如需脱离 Antigravity 独立在浏览器中查看：
-- 双击运行根目录下的 `start_dashboard.bat` 或在 PowerShell 中执行 `.\start_dashboard.ps1`；
-- 服务启动后将在默认浏览器中访问：`http://127.0.0.1:5899/`。
+2. **与 Agent 自然交互**：
+   在聊天窗口中直接向 Agent 发送：
+   - *“打开 Token 统计侧边栏仪表盘”*
+   - *“查看最近各项目 Token 消耗”*
+   - *“导出全量 Token 消耗明细为 CSV”*
+   
+   Agent 将自动引导您打开原生侧边栏。
 
 ---
 
-## 📁 目录结构
+## 📁 项目结构
 
 ```text
 token-calculator/
-├── .gitignore                      # Git 忽略配置 (忽略缓存、本地生成物等)
-├── LICENSE                         # MIT 开源许可证
-├── README.md                       # 项目说明文档
-├── plugin.json                     # Antigravity 插件清单配置
-├── collector.py                    # 跨端 Token 统计与元数据解析聚合引擎 (纯标准库实现)
-├── start_dashboard.bat             # Windows 独立服务快速启动入口 (批处理)
-├── start_dashboard.ps1             # Windows 独立服务快速启动入口 (PowerShell)
+├── .gitignore               # 规范的 Git 忽略清单
+├── LICENSE                  # MIT 开源许可证
+├── README.md                # 项目文档
+├── plugin.json              # 插件核心清单
 ├── assets/
-│   └── logo.svg                    # 插件矢量图标 (128x128)
+│   ├── logo.svg             # 插件矢量图标
+│   ├── preview.html         # 脱敏预览大盘页面
+│   └── preview.png          # 大盘预览截图
 ├── rules/
-│   └── AGENTS.md                   # 智能体工作规则 (定义侧窗呼出规范)
+│   └── AGENTS.md            # Agent 行为规范与侧窗入口指引
 └── sidecars/
     └── token-dashboard/
-        ├── sidecar.json            # Antigravity Sidecar 挂载配置 (AUX_PANE 入口)
-        ├── server.py               # 轻量内置 HTTP API 服务 (5899 端口与动态路由)
-        └── index.html              # 纯响应式自适应前端大盘 (Tailwind CSS)
+        ├── sidecar.json     # Sidecar 启动与挂载配置
+        ├── server.py        # 极简 HTTP 路由服务 (含进程重启与导出)
+        ├── collector.py     # 双端 Token 数据统一采集引擎
+        └── index.html       # 原生前端可视化仪表盘
 ```
 
 ---
@@ -102,6 +125,13 @@ token-calculator/
 
 ---
 
-## 📄 开源许可证
+## 🤝 贡献与反馈
 
-本项目基于 [MIT License](LICENSE) 开源。
+欢迎提交 Issue 或 Pull Request 共同改进！
+如果您觉得这个插件对您有帮助，欢迎点亮右上角的 ⭐️ **Star**！
+
+---
+
+## 📄 开源许可
+
+本项目遵循 [MIT License](LICENSE) 开源协议。

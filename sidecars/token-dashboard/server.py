@@ -13,7 +13,6 @@ import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # 引入统一数据采集引擎
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from collector import get_unified_token_data
 
 PORT = int(os.environ.get("ANTIGRAVITY_SIDECAR_WEB_PORT") or 5899)
