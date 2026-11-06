@@ -40,6 +40,21 @@ Antigravity Token Calculator 依托 Antigravity 原生 UI Sidecar 架构构建�
 
 ---
 
+## 数据与文件说明
+
+本插件完全在本地运行，不发起任何外部网络请求。相关读写路径如下：
+
+### 1. 读取文件（只读访问）
+- **Antigravity 数据**：读取 `~/.gemini/antigravity/conversations.db`（提取会话元数据）及各会话目录下的 `transcript.jsonl`（提取 Token 消耗步进）。
+- **Codex 数据**：读取 `~/.codex/` 相关目录下的会话元数据与用量记录。
+- *注：所有读取操作均为只读模式，不修改任何原生历史数据。*
+
+### 2. 生成文件
+- **扫描缓存**：`~/.gemini/token_tracker_cache.json`（用于本地增量计算加速，可在面板中点击「重启」清除重扫）。
+- **导出文件**：`~/Downloads/token_usage_export_YYYY-MM-DD.csv`（仅在用户点击「导出 CSV」按钮时写入系统下载目录）。
+
+---
+
 ## 安装指引 (Windows)
 
 ### 环境要求
