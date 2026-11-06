@@ -70,6 +70,42 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Disposition", 'attachment; filename="antigravity_codex_tokens.csv"')
             self.end_headers()
             self.wfile.write(content.encode("utf-8"))
+        elif path == "/api/export_save":
+            try:
+                data = get_unified_token_data()
+                import csv
+                import io
+                from datetime import datetime
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(["所属平台", "Conversation ID", "所属项目", "项目路径", "对话标题", "最后活跃时间", "输入Tokens", "输出Tokens", "缓存读取Tokens", "总Tokens", "请求次数"])
+                for c in data["conversations"]:
+                    writer.writerow([c.get("platform", "Antigravity"), c["cid"], c["project_name"], c["project_path"], c["title"], c["last_time"], c["input"], c["output"], c["cache"], c["total"], c["requests"]])
+                
+                downloads_dir = os.path.expanduser("~/Downloads")
+                if not os.path.exists(downloads_dir):
+                    downloads_dir = os.path.expanduser("~")
+                
+                date_str = datetime.now().strftime("%Y-%m-%d")
+                target_filename = f"token_usage_export_{date_str}.csv"
+                target_path = os.path.join(downloads_dir, target_filename)
+                
+                with open(target_path, "w", encoding="utf-8-sig") as f:
+                    f.write(output.getvalue())
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "ok",
+                    "filename": target_filename,
+                    "filepath": target_path
+                }, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
         elif path == "/api/restart":
             # 触发后台重新更新与聚合
             hard = "hard=true" in (parsed.query or "")

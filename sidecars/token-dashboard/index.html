@@ -1091,32 +1091,83 @@
       }
     }
 
-    function exportCSV() {
-      if (!rawData || !rawData.conversations || rawData.conversations.length === 0) {
-        alert("暂无可用会话数据可导出");
-        return;
+    function showToast(msg, duration = 3500) {
+      let toast = document.getElementById("dashboard-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "dashboard-toast";
+        toast.className = "fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-slate-900/95 border border-emerald-500/50 text-emerald-300 text-xs font-medium shadow-2xl flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2";
+        document.body.appendChild(toast);
       }
-      const headers = ["所属平台", "Conversation ID", "所属项目", "项目路径", "对话标题", "最后活跃时间", "输入Tokens", "输出Tokens", "缓存读取Tokens", "总Tokens", "请求次数"];
-      const rows = rawData.conversations.map(c => [
-        c.platform || "Antigravity",
-        c.cid || "",
-        `"${(c.project_name || "").replace(/"/g, '""')}"`,
-        `"${(c.project_path || "").replace(/"/g, '""')}"`,
-        `"${(c.title || "").replace(/"/g, '""')}"`,
-        c.last_time || "",
-        c.input || 0,
-        c.output || 0,
-        c.cache || 0,
-        c.total || 0,
-        c.requests || 0
-      ]);
-      const csvContent = "\ufeff" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `token_usage_export_${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
+      toast.textContent = msg;
+      toast.classList.remove("opacity-0", "-translate-y-2", "pointer-events-none");
+      toast.classList.add("opacity-100", "translate-y-0");
+
+      if (window._toastTimeout) clearTimeout(window._toastTimeout);
+      window._toastTimeout = setTimeout(() => {
+        toast.classList.remove("opacity-100", "translate-y-0");
+        toast.classList.add("opacity-0", "-translate-y-2", "pointer-events-none");
+      }, duration);
+    }
+
+    async function exportCSV() {
+      // 1. 优先通过后端直接写入本地 Downloads 目录 (彻底解决 Electron 侧窗 Webview 无法弹出下载框的问题)
+      let backendSaved = false;
+      let savedPath = "";
+      try {
+        const res = await fetch("/api/export_save");
+        if (res.ok) {
+          const ret = await res.json();
+          if (ret.status === "ok") {
+            backendSaved = true;
+            savedPath = ret.filepath || ret.filename;
+          }
+        }
+      } catch (e) {
+        // 后端无响应时继续走纯前端 Blob 下载
+      }
+
+      // 2. 补齐并触发浏览器标准 a 标签下载 (兼容独立浏览器运行环境)
+      try {
+        if (rawData && rawData.conversations && rawData.conversations.length > 0) {
+          const headers = ["所属平台", "Conversation ID", "所属项目", "项目路径", "对话标题", "最后活跃时间", "输入Tokens", "输出Tokens", "缓存读取Tokens", "总Tokens", "请求次数"];
+          const rows = rawData.conversations.map(c => [
+            c.platform || "Antigravity",
+            c.cid || "",
+            `"${(c.project_name || "").replace(/"/g, '""')}"`,
+            `"${(c.project_path || "").replace(/"/g, '""')}"`,
+            `"${(c.title || "").replace(/"/g, '""')}"`,
+            c.last_time || "",
+            c.input || 0,
+            c.output || 0,
+            c.cache || 0,
+            c.total || 0,
+            c.requests || 0
+          ]);
+          const csvContent = "\ufeff" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `token_usage_export_${new Date().toISOString().slice(0, 10)}.csv`;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 500);
+        }
+      } catch (e) {
+        // 忽略纯前端下载异常
+      }
+
+      // 3. 弹出 Toast 明确告知用户导出状态与保存位置
+      if (backendSaved) {
+        showToast(`✅ CSV 已保存至下载目录: ${savedPath}`);
+      } else {
+        showToast("✅ CSV 导出已触发下载！");
+      }
     }
 
     function openRestartModal() {
