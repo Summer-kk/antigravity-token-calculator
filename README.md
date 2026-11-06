@@ -63,7 +63,7 @@
 在 PowerShell 中执行以下一行命令，即可将插件克隆至 Antigravity 插件目录，开箱即用：
 
 ```powershell
-git clone https://github.com/Summer-kk/token-calculator.git "$HOME\.gemini\config\plugins\token-calculator"
+git clone https://github.com/Summer-kk/antigravity-token-calculator.git "$HOME\.gemini\config\plugins\token-calculator"
 ```
 
 > **提示**：克隆完成后，在 Antigravity 侧边栏即可直接点击开启。默认直接使用 Windows 官方 Python 启动器 `py`，零外部依赖，无需 `pip install` 任何库。
