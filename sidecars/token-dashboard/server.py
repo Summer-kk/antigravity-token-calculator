@@ -82,12 +82,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
 
-                # 2. 调用 update_dashboard 重新编译与同步各处
-                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-                up_script = os.path.join(base_dir, "update_dashboard.py")
-                if os.path.exists(up_script):
-                    import subprocess
-                    subprocess.run([sys.executable, up_script], check=False, timeout=15)
+                # 2. 重新触发全量数据重新扫描
+                pass
             except Exception as e:
                 print(f"Restart error: {e}", flush=True)
 
