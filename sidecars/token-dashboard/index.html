@@ -436,11 +436,24 @@
       renderDashboard();
     }
 
+    function getDailyList() {
+      if (!rawData || !rawData.daily) return [];
+      if (Array.isArray(rawData.daily)) return rawData.daily;
+      if (typeof rawData.daily === "object") {
+        return Object.entries(rawData.daily).map(([date, val]) => ({
+          date,
+          ...(typeof val === "object" ? val : { total: val })
+        }));
+      }
+      return [];
+    }
+
     function getValidDates() {
       if (!rawData || !rawData.daily) return null;
       if (currentTimeRange === "ALL") return null;
 
-      const daily = rawData.daily.map(d => d.date).sort();
+      const dailyList = getDailyList();
+      const daily = dailyList.map(d => d.date).filter(Boolean).sort();
       if (daily.length === 0) return null;
 
       const latestDateStr = daily[daily.length - 1];
@@ -696,7 +709,7 @@
           }
         });
       } else {
-        let daily = rawData.daily || [];
+        let daily = getDailyList();
         if (validDates) {
           daily = daily.filter(d => validDates.has(d.date));
         }
