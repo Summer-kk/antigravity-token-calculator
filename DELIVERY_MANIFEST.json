@@ -1,0 +1,20 @@
+{
+  "name": "token-calculator",
+  "version": "1.0.0",
+  "entrypoint": "sidecars/token-dashboard/server.py",
+  "built_at": "2026-11-19T09:02:42",
+  "source_commit": "b9f8e1a",
+  "files": {
+    "LICENSE": "4b47b1da6cc2531930d0c0c126ba56193f75b5ba4dd386191160eb62a99d4d60",
+    "README.md": "6892e5f2cb4190add95866fe95558f97dc941c4b1f4004ae875cda0ca2b2dff8",
+    "plugin.json": "17eeb7a2fe8f6d7932cfa0284585c705b0e6b084ee3067d5974c09a73b68959d",
+    "assets/logo.svg": "3cf3226eb406a5df27eb0df1f287ce7e079b4820321950b584102f7feb662313",
+    "assets/preview.html": "8c013cda0d7587fc38db1bbc026b0af9f6799902a2c8cea490dcf604df032c7e",
+    "assets/preview.png": "6fd3a063e0138b9c7e6f8250290ad12f45bcc95ae5804877c0155523081fd371",
+    "rules/AGENTS.md": "dac164a7f5288c606a6e0a31485fa0792a29a9acc88c885396b12dfb09561a71",
+    "sidecars/token-dashboard/collector.py": "c084e089e889af46f861d4d2152b96f29c465304e08d5328d3f9ba7328484833",
+    "sidecars/token-dashboard/index.html": "fe677be859b9cd92544a22e047c024204e3fd0344bd0d0fa82c5c922fec34d4d",
+    "sidecars/token-dashboard/server.py": "85b27e2e64244b7b0c309fa2749b9ce624c294d3ff1bc0b4138dd0f323275040",
+    "sidecars/token-dashboard/sidecar.json": "dcd15cb46b271b0c4874f2562b31a499c6f8384be4bc45e3686c1487cee1722e"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "token-calculator",
+  "displayName": "Token 消耗统计",
+  "version": "1.0.0",
+  "description": "Antigravity 2.0 原生 Token 消耗统计侧边栏插件 (Windows 专属 · 双端统一 · 零依赖)",
+  "author": {
+    "name": "Summer-kk"
+  },
+  "homepage": "https://github.com/Summer-kk/antigravity-token-calculator",
+  "repository": "https://github.com/Summer-kk/antigravity-token-calculator",
+  "logo": "assets/logo.svg",
+  "keywords": [
+    "antigravity",
+    "codex",
+    "token",
+    "calculator",
+    "dashboard",
+    "sidecar"
+  ],
+  "suggestedPrompts": [
+    "打开 Token 统计侧边栏仪表盘",
+    "更新本地各项目 Token 消耗数据",
+    "导出全量 Token 消耗明细为 CSV"
+  ]
+}
